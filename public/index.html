@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş-Çıxış Sistemi</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-color: #f4f6f9; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        h2 { margin-top: 0; color: #333; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:disabled { background-color: #a0a0a0; }
+        #status-box { margin-top: 15px; padding: 12px; border-radius: 6px; display: none; font-weight: 600; }
+        .success-in { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .success-out { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .user-info { font-size: 14px; color: #666; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>QR Giriş/Çıxış</h2>
+    
+    <div id="setup-form" style="display: none;">
+        <p>Sistemə ilk dəfə daxil olursunuz. Lütfən adınızı qeyd edin:</p>
+        <div class="input-group">
+            <label for="fullName">Ad və Soyad:</label>
+            <input type="text" id="fullName" placeholder="Məs: Əli Əliyev">
+        </div>
+        <button onclick="saveUser()">Təsdiqlə və Qeydiyyatı Et</button>
+    </div>
+
+    <div id="checkin-container" style="display: none;">
+        <div class="user-info" id="user-display"></div>
+        <button id="scan-btn" onclick="processScan()">Giriş / Çıxış Et</button>
+        <p style="font-size: 12px; color: #888; margin-top: 10px;">
+            <a href="#" onclick="resetUser()" style="color: #888;">Adı dəyişdir</a>
+        </p>
+    </div>
+
+    <div id="status-box"></div>
+</div>
+
+<script>
+    // 1. Cihaz ID-sini yoxla və ya yarat
+    let deviceId = localStorage.getItem('device_uuid');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+        localStorage.setItem('device_uuid', deviceId);
+    }
+
+    let userName = localStorage.getItem('user_name');
+
+    window.onload = function() {
+        if (!userName) {
+            document.getElementById('setup-form').style.display = 'block';
+        } else {
+            showCheckinUI();
+            // Əgər istəyirsənsə, QR oxutduqda düyməyə basmadan Avtomatik də göndərə bilər:
+            // processScan();
+        }
+    };
+
+    function saveUser() {
+        const nameInput = document.getElementById('fullName').value.trim();
+        if (!nameInput) {
+            alert('Lütfən adınızı daxil edin!');
+            return;
+        }
+        userName = nameInput;
+        localStorage.setItem('user_name', userName);
+        document.getElementById('setup-form').style.display = 'none';
+        showCheckinUI();
+        processScan();
+    }
+
+    function showCheckinUI() {
+        document.getElementById('checkin-container').style.display = 'block';
+        document.getElementById('user-display').innerText = 'Xoş gəldiniz, ' + userName;
+    }
+
+    function resetUser() {
+        if (confirm('Adınızı dəyişmək istədiyinizdən əminsiniz?')) {
+            localStorage.removeItem('user_name');
+            location.reload();
+        }
+    }
+
+    async function processScan() {
+        const btn = document.getElementById('scan-btn');
+        const statusBox = document.getElementById('status-box');
+        
+        btn.disabled = true;
+        btn.innerText = 'Göndərilir...';
+        statusBox.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deviceId, userName })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                statusBox.innerText = `${data.message}\nSaat: ${data.time}`;
+                statusBox.className = data.status === 'IN' ? 'success-in' : 'success-out';
+                statusBox.style.display = 'block';
+            } else {
+                alert('Xəta: ' + data.message);
+            }
+        } catch (err) {
+            alert('Serverlə əlaqə saxlanıla bilmədi.');
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Giriş / Çıxış Et';
+        }
+    }
+</script>
+
+</body>
+</html>
