@@ -16,30 +16,19 @@
         button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
         .user-info { font-size: 14px; color: #666; margin-bottom: 15px; }
 
-        /* Xüsusi alert (popup) */
-        .alert-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.55);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
+        /* Yuxarıda çıxan toast bildirişi */
+        .toast {
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            padding: 14px 32px; border-radius: 10px; color: #fff;
+            font-size: 17px; font-weight: bold; text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            z-index: 1000; opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
-        .alert-box {
-            padding: 28px 34px; border-radius: 14px; color: #fff;
-            font-size: 20px; font-weight: bold; text-align: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.35); min-width: 290px;
-            animation: popIn 0.25s ease;
-        }
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .alert-success { background-color: #28a745; }
-        .alert-error { background-color: #dc3545; }
-        .alert-box button {
-            margin-top: 18px; width: auto; padding: 9px 32px;
-            background-color: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.65);
-            color: #fff; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer;
-        }
-        .alert-box button:hover { background-color: rgba(255,255,255,0.35); }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast-success { background-color: #28a745; }
+        .toast-error { background-color: #dc3545; }
     </style>
 </head>
 <body>
@@ -65,12 +54,9 @@
     </div>
 </div>
 
-<!-- Xüsusi alert popup -->
-<div id="alert-overlay" class="alert-overlay" onclick="if(event.target === this) closeAlert()">
-    <div id="alert-box" class="alert-box">
-        <div id="alert-message"></div>
-        <button onclick="closeAlert()">OK</button>
-    </div>
+<!-- Yuxarıda çıxan toast bildirişi -->
+<div id="toast" class="toast">
+    <span id="toast-message"></span>
 </div>
 
 <script>
@@ -100,16 +86,20 @@
         }
     };
 
+    let toastTimer = null;
+
     function showAlert(message, type) {
-        const overlay = document.getElementById('alert-overlay');
-        const box = document.getElementById('alert-box');
-        document.getElementById('alert-message').innerText = message;
-        box.className = 'alert-box ' + (type === 'success' ? 'alert-success' : 'alert-error');
-        overlay.style.display = 'flex';
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-message').innerText = message;
+        toast.className = 'toast toast-' + type;
+        void toast.offsetWidth; // transition-i yenidən başlatmaq üçün
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(closeAlert, 1000);
     }
 
     function closeAlert() {
-        document.getElementById('alert-overlay').style.display = 'none';
+        document.getElementById('toast').classList.remove('show');
     }
 
     function saveUser() {

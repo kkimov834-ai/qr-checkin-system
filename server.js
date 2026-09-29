@@ -63,13 +63,9 @@ app.post('/api/scan', async (req, res) => {
 
         const isEntry = currentStatus === 'IN';
 
-        // Telegram bildirişi: Giriş → yaşıl ox şəkli + İşçi/Vaxt/Tarix mətni; Çıxış → tək qırmızı ox şəkli
-        if (isEntry) {
-            const caption = `İşçi: ${userName}\nVaxt: ${bakuTime}\nTarix: ${bakuDate}`;
-            await sendTelegramPhoto(GIRIS_IMAGE, caption);
-        } else {
-            await sendTelegramPhoto(CIXIS_IMAGE);
-        }
+        // Telegram bildirişi: Giriş → yaşıl ox şəkli; Çıxış → qırmızı ox şəkli. Hər ikisinin altında İşçi/Vaxt/Tarix
+        const caption = `İşçi: ${userName}\nVaxt: ${bakuTime}\nTarix: ${bakuDate}`;
+        await sendTelegramPhoto(isEntry ? GIRIS_IMAGE : CIXIS_IMAGE, caption);
 
         return res.json({
             success: true,
